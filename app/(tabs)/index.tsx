@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, FlatList, Image } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import StoreState from '../store/item.interface';
 import useItemStore from '../store/useItemStore';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 type ItemProps = {
   title: string,
@@ -21,21 +22,21 @@ export default function Tab() {
     <View style={styles.item}>
       <>
         <Image
-          style={{ height: 200, resizeMode: 'cover', borderRadius: 10 }}
+          style={{ height: 300, resizeMode: 'center', borderRadius: 10 }}
           source={{
             uri: imageUri,
           }}
         />
       </>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.location}>{location}</Text>
-      <Text style={styles.location}>{date}</Text>
+      <Text style={styles.location}><FontAwesome size={20} name={'map-pin'} color={'#32CD32'} />{"  " + location}</Text>
+      <Text style={styles.time}>{date}</Text>
     </View>
   );
   return (
     <View style={styles.container}>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 20 }}>Incidents Reported</Text>
+        <Text style={styles.heading}>Incidents Reported</Text>
         <FlatList
           data={items}
           renderItem={({ item }: any) => <Item
@@ -57,9 +58,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10
-    // justifyContent: 'center',
-    // alignItems: 'center',
   },
+  heading: { fontSize: 20, backgroundColor: '#32CD32', padding: 10, color: 'white', borderRadius: 10 },
   item: {
     backgroundColor: '#F5F5F5',
     padding: 20,
@@ -79,5 +79,9 @@ const styles = StyleSheet.create({
   },
   location: {
     fontSize: 20,
+  },
+  time: {
+    fontSize: 15,
+    color: 'gray'
   },
 });
