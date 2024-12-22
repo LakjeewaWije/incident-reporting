@@ -7,6 +7,7 @@ import StoreState from '../store/item.interface';
 import useItemStore from '../store/useItemStore';
 import { format } from 'date-fns';
 import IconButton from '../components/iconButton';
+import * as Location from 'expo-location';
 
 export default function Tab() {
 
@@ -93,9 +94,15 @@ export default function Tab() {
     const formattedDate = format(date, 'yyyy-MM-dd');
     // Format time as HH:mm and am/pm 
     const formattedTime = format(date, 'hh:mm a');
+
+    let location = await Location.getCurrentPositionAsync({});
+
+    location = await fetchAddressDetails(location.coords.latitude,location.coords.longitude)
+
+
     const item = {
       imageUri: assetInfo.localUri,
-      location: 'at talbot',
+      location: location,
       title: title,
       desc: desc,
       date: formattedDate + ' ' + formattedTime,
@@ -111,6 +118,19 @@ export default function Tab() {
     setModalVisible(!modalVisible)
   }
 
+  const fetchAddressDetails = async (latitude:any, longitude:any) => {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      } 
+      const data = await response.json(); 
+      return data;
+    } catch (error) {
+      console.error('Error fetching address details:', error); return null;
+    }
+  };
   return (
     <View style={styles.container}>
       <CameraView style={styles.camera} facing={facing} flash={flash} ref={cameraRef}>
