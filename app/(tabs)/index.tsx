@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, Dimensions, Pressable } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import StoreState from '../store/item.interface';
 import useItemStore from '../store/useItemStore';
@@ -6,20 +6,29 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Location from 'expo-location';
 import useAppStore from '../store/useAppStore';
 import AppStoreState from '../store/app.interface';
+import BarChartExample from '../components/barChart';
+import { useNavigation } from 'expo-router';
+import NoInternetOverlay from '../components/noInternetOverlay';
+import * as MediaLibrary from 'expo-media-library';
 type ItemProps = {
   title: string,
   locationData: any,
   imageUri: string,
   date: string,
-  id: string
+  id: string,
+  desc: string
 };
+
 export default function Tab() {
+  const navigation: any = useNavigation();
+  const [permissionML, requestMLPermission] = MediaLibrary.usePermissions();
   const items = useItemStore((state: StoreState) => state.items);
   const _location = useAppStore((state: AppStoreState) => state.location);
   const addLocation = useAppStore((state: AppStoreState) => state.addLocation);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
+  const windowWidth = Dimensions.get('window').width;
+  const windowHeight = Dimensions.get('window').height;
 
   useEffect(() => {
     async function getCurrentLocation() {
@@ -31,59 +40,77 @@ export default function Tab() {
       }
 
       let location = await Location.getCurrentPositionAsync({});
-      
+
       setLocation(location);
       addLocation(location);
     }
 
     getCurrentLocation()
+  }, [])
 
-    console.log("$%$%$%$%$%$%$%$%$%$%%%$%$%$%$%$%$% "+items[0]?.location)
+  useEffect(() => {
+    console.log(items)
   }, [items]);
 
-  const Item = ({ title, locationData, imageUri, date, id }: ItemProps) => (
-    <View style={styles.item}>
-      <>
+  const Item = ({ title, locationData, imageUri, date, id, desc }: ItemProps) => (
+    <Pressable style={styles.item} onPress={() =>
+      navigation.navigate('itemDetails', { title, location: locationData?.display_name, imageUri, date, id, desc })
+    }>
+      <View style={styles.itemImageWrap}>
         <Image
-          style={{ height: 300, resizeMode: 'center', borderRadius: 10 }}
+          style={styles.itemImage}
           source={{
             uri: imageUri,
           }}
         />
-      </>
-      <View style={{display:'flex',gap:8}}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.location}><FontAwesome size={20} name={'map-pin'} color={'#32CD32'} />{"  " + locationData.display_name}</Text>
-      <Text style={styles.time}>{date}</Text>
       </View>
-    </View>
+      <View style={styles.itemDesc}>
+        <Text style={[styles.title]}>{title}</Text>
+        <Text style={[styles.location, { maxWidth: windowWidth * 0.56 }]}><FontAwesome size={20} name={'map-pin'} color={'#32CD32'} />{"  " + locationData?.display_name}</Text>
+        <Text style={styles.time}>{date}</Text>
+      </View>
+    </Pressable>
   );
   return (
-    <View style={styles.container}>
-      {location ?
-        <View style={{ flex: 1 }}>
-          <Text style={styles.heading}>Incidents Reported</Text>
-          <FlatList
-            data={items}
-            renderItem={({ item }: any) => <Item
-              title={item.title}
-              locationData={item.location}
-              id={item.id}
-              imageUri={item.imageUri}
-              date={item.date}
-            />
+    <>
+      <View style={styles.container}>
+        {location ?
+          <View style={{ flex: 1, }}>
+            <View style={[styles.incidentBarCard, { height: windowHeight * 0.35 }]}>
+              <Text style={styles.heading}>Incidents Reported - {items.length}</Text>
+              <BarChartExample />
+            </View>
+
+            {items.length > 0 ?
+              <FlatList
+                data={items}
+                renderItem={({ item }: any) => <Item
+                  title={item.title}
+                  locationData={item.location}
+                  id={item.id}
+                  imageUri={item.imageUri}
+                  date={item.date}
+                  desc={item.desc}
+                />
+                }
+                keyExtractor={item => item.id}
+              />
+              :
+              <View style={{ flex: 1, alignItems: "center", marginTop: 10 }}>
+                <Text style={styles.noIncidentMessage}>No incidents reported</Text>
+              </View>
             }
-            keyExtractor={item => item.id}
-          />
-        </View>
-        :
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center",}}>
-          <Text style={{color:'red',fontSize:20,textAlign:'center',
-            borderWidth:1,padding:10,borderColor: '#FF4500',borderRadius:10,backgroundColor:'#FFB07A'
-          }}>Please Allow Location Services To Continue, Go to settings and turn on location services</Text>
+
           </View>
-      }
-    </View>
+          :
+          <View style={styles.allowLocationMessageContainer}>
+            <Text style={styles.locationServiceMessage}>Please Allow Location Services To Continue, Go to settings and turn on location services</Text>
+          </View>
+        }
+      </View>
+      {/* <NoInternetOverlay /> */}
+    </>
+
   );
 }
 
@@ -92,10 +119,22 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10
   },
-  heading: { fontSize: 20, backgroundColor: '#32CD32', padding: 10, color: 'white', borderRadius: 10 },
+  incidentBarCard: {
+    height: 300, backgroundColor: '#F8F8F8', borderRadius: 10, shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    marginHorizontal: 16,
+    elevation: 3,
+    marginBottom: 10
+  },
+  heading: { fontSize: 20, backgroundColor: '#2563eb', padding: 10, color: '#fff', borderTopRightRadius: 10, borderTopLeftRadius: 10 },
   item: {
     backgroundColor: '#F5F5F5',
-    padding: 20,
+    padding: 10,
     marginVertical: 8,
     marginHorizontal: 16,
     borderRadius: 10,
@@ -105,16 +144,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     // Shadow for Android 
-    elevation: 5
+    elevation: 5,
+    display: 'flex',
+    flexDirection: 'row'
   },
+  noIncidentMessage: {
+    color: 'gray', fontSize: 20, textAlign: 'center',
+    borderWidth: 1, padding: 10, borderColor: 'gray', borderRadius: 10, backgroundColor: '#fff'
+  },
+  allowLocationMessageContainer: { flex: 1, justifyContent: "center", alignItems: "center", },
+  locationServiceMessage: {
+    color: 'red', fontSize: 20, textAlign: 'center',
+    borderWidth: 1, padding: 10, borderColor: '#FF4500', borderRadius: 10, backgroundColor: '#fff'
+  },
+  itemImageWrap: { borderRadius: 10, overflow: 'hidden' },
+  itemImage: { height: 100, width: 100, resizeMode: 'cover', borderRadius: 10 },
+  itemDesc: { display: 'flex', gap: 2, backgroundColor: 'transparent', flexWrap: 'wrap', paddingLeft: 8 },
   title: {
-    fontSize: 32,
+    fontSize: 26,
   },
   location: {
-    fontSize: 18,
+    fontSize: 12,
   },
   time: {
-    fontSize: 15,
+    fontSize: 11,
     color: 'gray'
   },
 });

@@ -8,12 +8,15 @@ import useItemStore from '../store/useItemStore';
 import { format } from 'date-fns';
 import IconButton from '../components/iconButton';
 import * as Location from 'expo-location';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useNavigation } from 'expo-router';
+import NoInternetOverlay from '../components/noInternetOverlay';
 
 export default function Tab() {
-
+  const headerHeight = useHeaderHeight();
   const items = useItemStore((state: StoreState) => state.items);
   const addItem = useItemStore((state: StoreState) => state.addItem);
-
+  const navigation: any = useNavigation();
   const cameraRef: any = useRef(null);
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('off');
@@ -22,6 +25,7 @@ export default function Tab() {
   const [permission, requestPermission] = useCameraPermissions();
   const [permissionML, requestMLPermission] = MediaLibrary.usePermissions();
   const [modalVisible, setModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState<string>('');
   const windowWidth = Dimensions.get('window').width;
   const windowHeight = Dimensions.get('window').height;
@@ -72,23 +76,18 @@ export default function Tab() {
           skipProcessing: true,
         })
         .then(async (photoData: any) => {
-
-          console.log(`Delay after takePictureAsync: ${Date.now() - start} ms`);
           setImage(photoData.uri)
           setModalVisible(true);
-          console.log(photoData.uri);
         });
     }
   };
 
   const reportIncident = async () => {
 
-
+    setIsLoading(true)
     // Save the image to the media library const 
     const asset = await MediaLibrary.createAssetAsync(image);
     const assetInfo = await MediaLibrary.getAssetInfoAsync(asset);
-    console.log("ASSET ", asset)
-    console.log("assetInfo ", assetInfo);
     const date = new Date()
     // Format date as YYYY-MM-DD 
     const formattedDate = format(date, 'yyyy-MM-dd');
@@ -97,7 +96,7 @@ export default function Tab() {
 
     let location = await Location.getCurrentPositionAsync({});
 
-    location = await fetchAddressDetails(location.coords.latitude,location.coords.longitude)
+    location = await fetchAddressDetails(location.coords.latitude, location.coords.longitude)
 
 
     const item = {
@@ -110,6 +109,8 @@ export default function Tab() {
     }
     addItem(item);
     setModalVisibility()
+    setIsLoading(false)
+    navigation.navigate('index')
   }
 
   const setModalVisibility = () => {
@@ -118,14 +119,14 @@ export default function Tab() {
     setModalVisible(!modalVisible)
   }
 
-  const fetchAddressDetails = async (latitude:any, longitude:any) => {
+  const fetchAddressDetails = async (latitude: any, longitude: any) => {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
     try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Network response was not ok');
-      } 
-      const data = await response.json(); 
+      }
+      const data = await response.json();
       return data;
     } catch (error) {
       console.error('Error fetching address details:', error); return null;
@@ -154,15 +155,16 @@ export default function Tab() {
         onRequestClose={() => {
           setModalVisibility()
         }}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.centeredView]}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.centeredView, { paddingTop: headerHeight }]}>
           <View style={styles.modalView}>
-            <Image
-              style={styles.modalImage}
-              source={{
-                uri: image,
-              }}
-            />
+            <View style={{ borderRadius: 10, overflow: 'hidden', width: 'auto', height: 'auto' }}>
+              <Image
+                style={{ width: windowWidth / 3 * 2, height: '100%' }}
+                source={{ uri: image }}
+              />
+            </View>
           </View>
+
           <View style={[styles.modalViewDec]}>
             <TextInput
               style={styles.input}
@@ -178,15 +180,17 @@ export default function Tab() {
               placeholder="Enter Incident Description"
               placeholderTextColor="#888"
             />
-            <Text style={styles.locationDesc}>Location will be fetched by app from the point of incident to verify the reliability</Text>
+            <Text style={styles.locationDesc}>Location will be recorded to ensure the accuracy and authenticity of the provided details.</Text>
 
             <View style={styles.modalBtnView}>
-              <IconButton size={35} icon="close" color={'white'} style={styles.closeModalBtn} onPress={setModalVisibility} />
+              <IconButton disabled={isLoading} size={35} icon="close" color={'white'}
+                style={styles.closeModalBtn}
+                onPress={setModalVisibility} />
 
               <TouchableOpacity style={[{
                 padding: 10, borderRadius: 10
-              }, (title.length > 0 && desc.length > 0) ? { backgroundColor: '#32CD32' } : { backgroundColor: '#D3D3D3' }]}
-                disabled={title.length == 0 || desc.length == 0}
+              }, (title.length > 0 && desc.length > 0 && !isLoading) ? { backgroundColor: '#32CD32' } : { backgroundColor: '#D3D3D3' }]}
+                disabled={title.length == 0 || desc.length == 0 || isLoading}
                 onPress={() => reportIncident()}>
                 <FontAwesome size={30} name="check-circle" color={'white'} />
               </TouchableOpacity>
@@ -194,6 +198,7 @@ export default function Tab() {
           </View >
         </KeyboardAvoidingView>
       </Modal>
+      {/* <NoInternetOverlay /> */}
     </View>
   );
 }
@@ -238,22 +243,25 @@ const styles = StyleSheet.create({
   },
   centeredView: {
     flex: 1,
+    // marginTop:97,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalView: {
     flex: 2,
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     alignItems: 'center',
-    justifyContent: 'center',
+    // justifyContent: 'center',
+    // overflow: 'hidden',
+    padding: 5
   },
   modalImage: {
-    height: 300, width: 300, resizeMode: 'center', borderRadius: 10, overflow: 'hidden'
+    height: 300, width: 300, resizeMode: 'center'
 
   },
   modalViewDec: {
-    flex: 1.7,
+    flex: 3,
     gap: 10,
     padding: '2%',
     width: '100%',
@@ -279,6 +287,7 @@ const styles = StyleSheet.create({
   },
   locationDesc: {
     color: 'white',
+    fontWeight: '600',
     textAlign: 'center',
     padding: 10, borderWidth: 1, borderRadius: 10,
     borderColor: '#32CD32',

@@ -6,18 +6,16 @@ import AppStoreState from '../store/app.interface';
 import StoreState from '../store/item.interface';
 import useItemStore from '../store/useItemStore';
 import * as Location from 'expo-location';
+import NoInternetOverlay from '../components/noInternetOverlay';
 export default function Tab() {
   const _location = useAppStore((state: AppStoreState) => state.location);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const addLocation = useAppStore((state: AppStoreState) => state.addLocation);
   const items = useItemStore((state: StoreState) => state.items);
-  const [otherPins, setOtherPins] = useState('')
   const [htmlContent, setHtmlContent] = useState('')
 
-  // const [template,setTemplate] = useState('')
   useEffect(() => {
-
     async function getCurrentLocation() {
 
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -33,15 +31,11 @@ export default function Tab() {
     }
 
     getCurrentLocation()
-
-
-    console.log("YOUT LOCATION", location)
-    console.log("ITEMSS ", items[0]?.location.lat, items[0]?.location.lon, items[0]?.title);
-    // if(items.length >0)
-    // setOtherPins(generateMarkersScript(items))
+  }, []);
+  // const [template,setTemplate] = useState('')
+  useEffect(() => {
     const incPins = generateMarkersScript(items)
 
-    console.log("incPins  ", incPins)
     setNewMap(incPins)
   }, [items]);
 
@@ -143,12 +137,11 @@ export default function Tab() {
           originWhitelist={['*']}
           source={{ html: htmlContent }}
           style={styles.map}
-        /> : <View style={{ flex: 1, justifyContent: "center", alignItems: "center", }}>
-          <Text style={{
-            color: 'red', fontSize: 20, textAlign: 'center',
-            borderWidth: 1, padding: 10, borderColor: '#FF4500', borderRadius: 10, backgroundColor: '#FFB07A'
-          }}>Please Allow Location Services To Continue, Go to settings and turn on location services</Text>
+        />
+        : <View style={styles.locationServiceMsgContainer}>
+          <Text style={styles.locationServiceMessage}>Please Allow Location Services To Continue, Go to settings and turn on location services</Text>
         </View>}
+        {/* <NoInternetOverlay /> */}
     </View>
   );
 }
@@ -160,4 +153,9 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  locationServiceMsgContainer: { flex: 1, justifyContent: "center", alignItems: "center", },
+  locationServiceMessage: {
+    color: 'red', fontSize: 20, textAlign: 'center',
+    borderWidth: 1, padding: 10, borderColor: '#FF4500', borderRadius: 10, backgroundColor: '#fff'
+  }
 });
