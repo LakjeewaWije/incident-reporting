@@ -36,9 +36,9 @@ const BarChartExample: React.FC = () => {
     useEffect(() => {
 
         let monthCounts: any = {
-            Jan: 0,
-            Feb: 0,
-            Mar: 0,
+            // Jan: 0,
+            // Feb: 0,
+            // Mar: 0,
             Apr: 0,
             May: 0,
             Jun: 0,

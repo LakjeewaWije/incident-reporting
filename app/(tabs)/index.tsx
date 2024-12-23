@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Image, Dimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, Dimensions, Pressable, ImageBackground } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import StoreState from '../store/item.interface';
 import useItemStore from '../store/useItemStore';
@@ -10,6 +10,7 @@ import BarChartExample from '../components/barChart';
 import { useNavigation } from 'expo-router';
 import NoInternetOverlay from '../components/noInternetOverlay';
 import * as MediaLibrary from 'expo-media-library';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 type ItemProps = {
   title: string,
   locationData: any,
@@ -32,7 +33,7 @@ export default function Tab() {
 
   useEffect(() => {
     async function getCurrentLocation() {
-
+      // AsyncStorage.clear();
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setErrorMsg('Permission to access location was denied');
@@ -57,17 +58,19 @@ export default function Tab() {
       navigation.navigate('itemDetails', { title, location: locationData?.display_name, imageUri, date, id, desc })
     }>
       <View style={styles.itemImageWrap}>
-        <Image
+        <ImageBackground
           style={styles.itemImage}
-          source={{
-            uri: imageUri,
-          }}
-        />
+          source={{ uri: imageUri }}
+          imageStyle={{ borderRadius: 10 }} // Ensures the image itself has rounded corners
+        >
+          {/* You can add other components inside the ImageBackground */}
+          {/* <Text style={styles.textOverlay}>Your content here</Text> */}
+        </ImageBackground>
       </View>
       <View style={styles.itemDesc}>
-        <Text style={[styles.title]}>{title}</Text>
-        <Text style={[styles.location, { maxWidth: windowWidth * 0.56 }]}><FontAwesome size={20} name={'map-pin'} color={'#32CD32'} />{"  " + locationData?.display_name}</Text>
-        <Text style={styles.time}>{date}</Text>
+        <Text numberOfLines={1} style={[styles.title, { maxWidth: windowWidth * 0.56 }]}>{title}</Text>
+        <Text numberOfLines={3} style={[styles.location, { maxWidth: windowWidth * 0.56 }]}><FontAwesome size={20} name={'map-pin'} color={'#32CD32'} />{"  " + locationData?.display_name}</Text>
+        <Text style={[styles.time, { maxWidth: windowWidth * 0.56 }]}>{date}</Text>
       </View>
     </Pressable>
   );
@@ -157,17 +160,21 @@ const styles = StyleSheet.create({
     color: 'red', fontSize: 20, textAlign: 'center',
     borderWidth: 1, padding: 10, borderColor: '#FF4500', borderRadius: 10, backgroundColor: '#fff'
   },
-  itemImageWrap: { borderRadius: 10, overflow: 'hidden' },
-  itemImage: { height: 100, width: 100, resizeMode: 'cover', borderRadius: 10 },
-  itemDesc: { display: 'flex', gap: 2, backgroundColor: 'transparent', flexWrap: 'wrap', paddingLeft: 8 },
+  itemImageWrap: { borderRadius: 10, overflow: 'hidden', flex: 1 },
+  itemImage: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  itemDesc: { flex: 2.4, gap: 2, backgroundColor: 'transparent', flexWrap: 'wrap', paddingLeft: 8 },
   title: {
-    fontSize: 26,
+    fontSize: 20,
   },
   location: {
     fontSize: 12,
+    color: '#71797E'
   },
   time: {
     fontSize: 11,
-    color: 'gray'
+    color: '#2563eb'
   },
 });
